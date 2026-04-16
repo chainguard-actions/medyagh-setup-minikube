@@ -1,0 +1,56 @@
+{
+  "name": "minikube-action",
+  "version": "0.0.18",
+  "private": true,
+  "description": "start a kubernetes cluster in github actions",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write **/*.ts",
+    "format-check": "prettier --check **/*.ts",
+    "lint": "eslint src/**/*.ts",
+    "pack": "ncc build",
+    "test": "jest",
+    "all": "npm run build && npm run format && npm run lint && npm run pack && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medyagh/setup-minikube"
+  },
+  "keywords": [
+    "minikube",
+    "minikube CI",
+    "test aginst kubernetes",
+    "test kubernetes",
+    "kuberentes CI",
+    "kubernetes",
+    "kubernetes cluster",
+    "github",
+    "actions"
+  ],
+  "author": "medyagh",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/cache": "^4.0.3",
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/tool-cache": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "@vercel/ncc": "^0.38.3",
+    "eslint": "^9.39.2",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-github": "^6.0.0",
+    "eslint-plugin-jest": "^29.0.1",
+    "jest": "^30.0.5",
+    "jest-circus": "^30.0.5",
+    "js-yaml": "^4.1.1",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
+  }
+}
