@@ -1,5 +1,7 @@
 # medyagh/setup-minikube
 
+official minikube github action, continuous integration test on Kubernetes cluster, test your code on a certified Kubernetes
+
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/medyagh/setup-minikube](https://github.com/medyagh/setup-minikube).
 
 ## Versions
