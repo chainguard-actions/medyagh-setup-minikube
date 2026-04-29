@@ -1,6 +1,12 @@
 # medyagh/setup-minikube
 
-Hardened GitHub Action by [Chainguard](https://www.chainguard.dev).
+Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/medyagh/setup-minikube](https://github.com/medyagh/setup-minikube).
+
+## Versions
+
+| Version | Tag | Upstream commit |
+|---------|-----|-----------------|
+| v0.0.21 | [`v0.0.21`](https://github.com/chainguard-actions/setup-minikube/tree/v0.0.21) | — |
 
 ## Privacy
 
