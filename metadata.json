@@ -1,7 +1,0 @@
-{
-  "owner": "medyagh",
-  "name": "setup-minikube",
-  "visibility": "internal",
-  "description": "official minikube github action, continuous integration test on Kubernetes cluster, test your code on a certified Kubernetes",
-  "block_publish": false
-}
