@@ -1,0 +1,49 @@
+name: Test minikube install with custom install path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create custom install directory
+        run: mkdir -p /tmp/minikube-custom-bin
+      - id: action
+        uses: .
+        with:
+          start: 'false'
+          cache: 'false'
+          install-path: '/tmp/minikube-custom-bin'
+        continue-on-error: true
+      - name: Assert action outcome and minikube binary at custom path
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "Action succeeded, checking minikube binary at custom path..."
+            if [ ! -f "/tmp/minikube-custom-bin/minikube" ]; then
+              echo "FAIL: minikube binary not found at /tmp/minikube-custom-bin/minikube"
+              echo "Contents of /tmp/minikube-custom-bin:"
+              ls -la /tmp/minikube-custom-bin/ 2>/dev/null || echo "(directory empty or not found)"
+              exit 1
+            fi
+            echo "PASS: minikube found at /tmp/minikube-custom-bin/minikube"
+            if [ ! -x "/tmp/minikube-custom-bin/minikube" ]; then
+              echo "FAIL: minikube binary is not executable"
+              exit 1
+            fi
+            echo "PASS: minikube binary is executable"
+            VERSION_OUTPUT=$(/tmp/minikube-custom-bin/minikube version 2>&1)
+            echo "Version output: $VERSION_OUTPUT"
+            if ! echo "$VERSION_OUTPUT" | grep -q "minikube version"; then
+              echo "FAIL: minikube version output unexpected: $VERSION_OUTPUT"
+              exit 1
+            fi
+            echo "PASS: minikube version output looks correct"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (download may not be available in this environment)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

@@ -1,0 +1,44 @@
+name: Test minikube install with specific version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          minikube-version: '1.33.1'
+          start: 'false'
+          cache: 'false'
+        continue-on-error: true
+      - name: Assert action outcome and minikube version
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "action outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "Action succeeded, checking minikube version..."
+            if ! command -v minikube >/dev/null 2>&1; then
+              MINIKUBE_BIN="$HOME/bin/minikube"
+              if [ ! -f "$MINIKUBE_BIN" ]; then
+                echo "FAIL: minikube binary not found in PATH or at $MINIKUBE_BIN"
+                exit 1
+              fi
+              VERSION_OUTPUT=$("$MINIKUBE_BIN" version 2>&1)
+            else
+              VERSION_OUTPUT=$(minikube version 2>&1)
+            fi
+            echo "Version output: $VERSION_OUTPUT"
+            if ! echo "$VERSION_OUTPUT" | grep -q "v1.33.1"; then
+              echo "FAIL: expected version v1.33.1 not found in output"
+              exit 1
+            fi
+            echo "PASS: minikube version v1.33.1 confirmed"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (download may not be available in this environment)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

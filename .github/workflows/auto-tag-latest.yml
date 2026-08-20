@@ -1,0 +1,16 @@
+name: "auto-tag-latest"
+permissions:
+  contents: write
+on:
+  release:
+    types: [published]
+jobs:
+  # move the "latest" and major version tags to the latest release, e.g., v1, to enable
+  # consumers to subscribe to the latest reverse-compatible release
+  auto-tag-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Actions-R-Us/actions-tagger@330ddfac760021349fef7ff62b372f2f691c20fb # v2
+        with:
+          publish_latest_tag: true
+          prefer_branch_releases: false 

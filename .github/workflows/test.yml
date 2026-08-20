@@ -1,0 +1,128 @@
+name: "ci"
+permissions: {}
+on: # rebuild any PRs and main branch changes
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  schedule:
+    # every 4 hours
+    - cron: "0 */4 * * *"
+  push:
+    branches:
+      - master
+      - 'releases/*'
+defaults:
+  run:
+    shell: bash # set bash as default shell
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+        scenario:
+          - ingress
+          - extra-options
+          - nodes
+          - insecure-registry
+          - feature-gates
+          - none-driver
+          - podman
+          - minikube-version-HEAD
+        include:
+          - scenario: ingress
+            addons: ingress
+          - scenario: extra-options
+            extra_config: kubelet.max-pods=10
+          - scenario: nodes
+            nodes: 2
+          - scenario: insecure-registry
+            insecure_registry: 192.168.0.0/16
+          - scenario: feature-gates
+            feature_gates: SidecarContainers=true
+            kubernetes_version: 1.31.0
+            container_runtime: containerd
+          - scenario: none-driver
+            driver: none
+            start_args: --alsologtostderr
+          - scenario: podman
+            driver: podman
+          - scenario: minikube-version-HEAD
+            minikube_version: HEAD
+    runs-on: ${{ matrix.os }}
+    steps:
+      - id: info-block
+        uses: medyagh/info-block@16d412ee23c6861a696c0d140899f7aa151b57cc # main
+      - name: Install Podman
+        if: matrix.scenario == 'podman'
+        run: |
+          lsb_release -a
+          sudo apt update
+          sudo apt install -y podman
+          echo "--------------------------"
+          podman version || true
+          echo "--------------------------"
+          podman info || true
+          echo "--------------------------"
+          podman system df || true
+          echo "--------------------------"
+          podman system info --format='{{json .}}'|| true
+          echo "--------------------------"
+          podman ps || true
+          echo "--------------------------"
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: ./
+        with:
+          addons: ${{ matrix.addons || '' }}
+          extra-config: ${{ matrix.extra_config || '' }}
+          nodes: ${{ matrix.nodes || '' }}
+          insecure-registry: ${{ matrix.insecure_registry || '' }}
+          feature-gates: ${{ matrix.feature_gates || '' }}
+          kubernetes-version: ${{ matrix.kubernetes_version || '' }}
+          container-runtime: ${{ matrix.container_runtime || '' }}
+          driver: ${{ matrix.driver || '' }}
+          start-args: ${{ matrix.start_args || '' }}
+      - name: Verify ingress addon enabled
+        if: matrix.scenario == 'ingress'
+        run: |
+          minikube addons list | grep 'ingress ' | grep enabled
+      - name: Verify max pods extra config
+        if: matrix.scenario == 'extra-options'
+        run: |
+          cat ~/.minikube/profiles/minikube/config.json | jq '.KubernetesConfig.ExtraOptions[0].Key' | grep max-pods
+      - name: Verify node count
+        if: matrix.scenario == 'nodes'
+        run: |
+          if [ $(kubectl get nodes --no-headers | wc -l) -eq 2 ]; then
+            echo "The cluster has exactly 2 nodes."
+          else
+            echo "::error::The cluster does not have 2 nodes."
+            exit 1
+          fi
+      - name: Verify insecure registry configured
+        if: matrix.scenario == 'insecure-registry'
+        run: |
+          minikube ssh cat /lib/systemd/system/docker.service | grep 192.168.0.0/16
+      - name: Verify feature gates enabled
+        if: matrix.scenario == 'feature-gates'
+        run: |
+          jq -e '(.KubernetesConfig.FeatureGates // "") | tostring | contains("SidecarContainers=true")' ~/.minikube/profiles/minikube/config.json
+      - name: Wait for CoreDNS rollout
+        if: matrix.scenario == 'none-driver' || matrix.scenario == 'podman'
+        run: |
+          kubectl --namespace=kube-system rollout status deployment/coredns --timeout=60s --watch
+      - name: Verify DNS resolution
+        if: matrix.scenario == 'none-driver' || matrix.scenario == 'podman'
+        run: |
+          kubectl run \
+            --attach \
+            --image=docker.io/busybox \
+            --restart=Never \
+            --rm \
+            nslookup \
+            -- \
+            nslookup kubernetes.default.svc.cluster.local
